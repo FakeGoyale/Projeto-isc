@@ -1,0 +1,112 @@
+.include "MACROSv21.s" #inclui o arquivo "MACROSv21.s no programa, necessário para que as syscalls do arquivo "SYSTEMv21.s" funcionem 
+.data 
+
+STR: .string "Digite um numero:" 
+PAR: .string " eh par!" 
+IMPAR: .string " eh impar!" "IMPAR" 
+QNT_NOTAS_PAR: .word 7     # adcionamos tanto a quantidade quanto as notas/duração das duas músicas solicitadas
+NOTAS_PAR: .word 76,150,76,300,76,300,72,150,76,300,79,600,55,600 
+QNT_NOTAS_IMPAR: .word 21 
+NOTAS_IMPAR: .word 72,526,76,350,77,350,81,175,79,526,76,350,72,350,69,175,65,175,65,175,65,175,67,1052,65,174,65,174,65,174,67,174,70,526,72,175,72,175,72,175,72,175
+
+.text
+	# Pede um numero ao usuário, foi alterado para que usasse o bitmap display no lugar do terminal.
+	li a7, 104
+	la a0, STR
+	li a1, 0
+	li a2,0
+	li a3,0x00ff
+	li a4, 0
+	ecall
+	#ler o numero digitado
+	li a7, 5
+	ecall
+	# Verificar se o número é par ou ímpar
+	mv t5, a0 #foi copiado o valor em a0 para t5, pois quando se usava a0 na instrução rem, o programa não funcionava
+	li t1, 2
+	rem t2, t5, t1
+	beqz t2, BITMAP_PAR #foi trocado o beq por beqz, além de trocar a lable de distino para que o programa moste o texto no bitmap display
+	j BITMAP_IMPAR 
+
+BITMAP_PAR:#mostra o numero no bitmap display
+	li a7, 101
+	li a1, 135
+	li a2, 0
+	li a3, 0x07ff
+	li a4, 0
+	ecall
+	j Ehpar
+
+Ehpar:
+	# foi alterado para exibir a mensagem de número par no bitmap display, foi adcionado um jump para a lable "ReproduzirPar", para que a melodia seja tocada 
+	li a7, 104
+	la a0, PAR
+	ecall
+	j ReproduzirPar
+	
+BITMAP_IMPAR:#mostra o numero no bitmap display
+	li a7, 101
+	li a1, 135
+	li a2, 0
+	li a3, 0x88ff
+	li a4, 0
+	ecall
+	j Ehimpar
+	
+Ehimpar:
+	# foi alterado para exibir a mensagem de número impar no bitmap display, foi adcionado um jump para a lable "ReproduzirImpar", para que a melodia seja tocada
+	la a0, IMPAR
+	li a7, 104
+	ecall
+	j ReproduzirImpar
+
+ReproduzirPar:
+	# Reproduzir a melodia de Super Mario Bros. para números pares
+	la s0 QNT_NOTAS_PAR
+	lw s1,0(s0)
+	la s0, NOTAS_PAR
+	li t0, 0
+	li a2, 1
+	li a3, 127
+
+LoopPar:
+	beq t0, s1, FIM
+	lw a0, 0(s0)
+	lw a1, 4(s0)
+	li a7, 31
+	ecall
+	mv a0, a1
+	li a7, 32
+	ecall
+	addi s0, s0, 8
+	addi t0, t0, 1
+	j LoopPar
+
+ReproduzirImpar:
+	# Reproduzir a melodia de The Simpsons para números ímpares
+	la s0 QNT_NOTAS_IMPAR
+	lw s1,0(s0)
+	la s0, NOTAS_IMPAR
+	li t0, 0
+	li a2, 1
+	li a3, 127
+
+LoopImpar:
+	beq t0, s1, FIM
+	lw a0, 0(s0)
+	lw a1, 4(s0)
+	li a7, 31
+	ecall
+	mv a0, a1
+	li a7, 32
+	ecall
+	addi s0, s0, 8
+	addi t0, t0, 1
+	j LoopImpar
+
+FIM:
+	# Fim do programa
+	li a7, 10
+	ecall
+	
+.include "SYSTEMv21.s" #incluoi novas syscalls, que foram ultilizadas no programa
